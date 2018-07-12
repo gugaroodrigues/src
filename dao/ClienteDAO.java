@@ -24,27 +24,27 @@ public class ClienteDAO {
 
     public int inserir(ClienteBean cliente) {
         Connection conexao = ConexaoFactory.obterConexao();
-        if (conexao != null){
-            String sql =  "INSERT INTO clientes"
-                          + "\n (nome, data_nascimento, cpf)"
-                          + "\nVALUES (?,?,?)";
-            try{
-                PreparedStatement preparedStatement = 
-                        conexao.prepareStatement(sql, 
+        if (conexao != null) {
+            String sql = "INSERT INTO clientes"
+                    + "\n (nome, data_nascimento, cpf)"
+                    + "\nVALUES (?,?,?)";
+            try {
+                PreparedStatement preparedStatement
+                        = conexao.prepareStatement(sql,
                                 PreparedStatement.RETURN_GENERATED_KEYS);
                 preparedStatement.setString(1, cliente.getNome());
                 preparedStatement.setString(2, cliente.getData());
                 preparedStatement.setString(3, cliente.getCpf());
                 preparedStatement.execute();
-                ResultSet resultSet = 
-                        preparedStatement.getGeneratedKeys();
-                if(resultSet.next()){
+                ResultSet resultSet
+                        = preparedStatement.getGeneratedKeys();
+                if (resultSet.next()) {
                     return resultSet.getInt(1);
                 }
-                
-            }catch(SQLException e){
+
+            } catch (SQLException e) {
                 e.printStackTrace();
-            }finally{
+            } finally {
                 ConexaoFactory.fecharConexao();
             }
         }
@@ -55,13 +55,54 @@ public class ClienteDAO {
         return false;
     }
 
-    public boolean apagar(ClienteBean cliente) {
+    public boolean apagar(int id) {
+        String sql = "DELETE FROM clientes WHERE id = ?";
+        Connection conexao = ConexaoFactory.obterConexao();
+        if (conexao != null) {
+            try {
+                PreparedStatement ps = conexao.prepareStatement(sql);
+                ps.setInt(1, id);
+                return ps.executeUpdate() == 1;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } finally {
+                ConexaoFactory.fecharConexao();
+            }
+        }
         return false;
     }
 
     public ClienteBean obterClientePeloId(int id) {
-        return null;
+        String sql = "SELECT id, nome, data_nascimento, cpf, ativo"
+                + "FROM clientes WHERE id = ?";
+
+        Connection conexao = ConexaoFactory.obterConexao();
+        if (conexao != null) {
+            try {
+                PreparedStatement ps = conexao.prepareStatement(sql);
+                ps.setInt(1, id);
+                ps.execute();
+                ResultSet resultSet = ps.getResultSet();
+                if (resultSet.next()) {
+                    ClienteBean cliente = new ClienteBean();
+                    cliente.setId(resultSet.getInt("id"));
+                    cliente.setNome(resultSet.getString("nome"));
+                    cliente.setData(resultSet.getString("data_nascimento"));
+                    cliente.setCpf(resultSet.getString("cpf"));
+                    cliente.setAtivo(resultSet.getBoolean("Ativo"));
+                    return cliente;
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } finally {
+                ConexaoFactory.fecharConexao();
+            }
+        }return null;
     }
+
+
+
+ 
 
     public List<ClienteBean> obterCliente() {
         List<ClienteBean> clientes = new ArrayList<>();
@@ -86,9 +127,9 @@ public class ClienteDAO {
                }
            } catch(SQLException e){
                e.printStackTrace();
-           }
+           }finally{
+            ConexaoFactory.fecharConexao();
+        }
         }
         return clientes;
     }
-
-}
