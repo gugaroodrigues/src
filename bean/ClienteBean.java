@@ -78,6 +78,5 @@ public class ClienteBean {
     public void setAtivo(boolean ativo) {
         this.ativo = ativo;
     }
-
     
 }

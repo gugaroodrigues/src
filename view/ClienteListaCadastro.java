@@ -7,8 +7,11 @@ import java.util.ArrayList;
 import javax.swing.JButton;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.sql.SQLException;
 import java.util.List;
 import javax.swing.ButtonGroup;
 import javax.swing.JFormattedTextField;
@@ -54,6 +57,7 @@ public class ClienteListaCadastro implements BaseGUInterface {
         acaoBotaoExcluir();
         acaoBotaoTeclas();
         popularTabela();
+        acaoCodigoLostFocus();
         jFrame.setVisible(true);
     }
 
@@ -219,6 +223,8 @@ public class ClienteListaCadastro implements BaseGUInterface {
                 cliente.setNome(jTextFieldNome.getText());
                 cliente.setData("1994-06-21");
                 cliente.setCpf(cpf);
+                
+              if (jTextFieldID.getText().isEmpty()){
                 int id = new ClienteDAO().inserir(cliente);
                 cliente.setId(id);
                 
@@ -228,12 +234,30 @@ public class ClienteListaCadastro implements BaseGUInterface {
                     cliente.getNome(),
                     cliente.getCpf()
                 });
+              }else{
+                  try{
+                      int id =  Integer.parseInt(jTextFieldID.getText());
+                      cliente.setId(id);
+                      boolean alterou = new ClienteDAO().alterar(cliente);
+                      if(alterou){
+                          JOptionPane.showMessageDialog(null, "Cliente alterado com Sucesso");
+                          int linhaSelecionada = jTable.getSelectedRow();
+                          dtm.setValueAt(cliente.getId(), linhaSelecionada, 0);
+                          dtm.setValueAt(cliente.getNome(), linhaSelecionada, 1);
+                          dtm.setValueAt(cliente.getCpf(), linhaSelecionada, 2);
+                      }
+                      
+                  }catch(NumberFormatException el){
+                      JOptionPane.showMessageDialog(null, "Código deve ser um "
+                              + "código válido");
+                  }
+              }
 
                 limparCampos();
             }
         });
     }
-
+                
     private void limparCampos() {
         jTextFieldID.setText("");
         jFormattedTextFieldCPF.setText("");
@@ -254,8 +278,12 @@ public class ClienteListaCadastro implements BaseGUInterface {
                 int linhaSelecionada = jTable.getSelectedRow();
                 int id = Integer.parseInt(jTable.getValueAt(linhaSelecionada,
                         0).toString());
-                ClienteBean cliente = new Cliente().obterClientePeloID(id);
+                ClienteBean cliente = new ClienteDAO().obterClientePeloId(id);
                  jTextFieldNome.setText(cliente.getNome());
+                 jTextFieldID.setText(String.valueOf(cliente.getId()));
+                 jFormattedTextFieldCPF.setText(cliente.getCpf());
+                 jFormattedTextFieldData.setText(Utilitarios.obterPadraoBr(
+                         cliente.getData()));
 
             }
         });
@@ -383,6 +411,48 @@ public class ClienteListaCadastro implements BaseGUInterface {
                 cliente.getCpf()
             });
         }
+    }
+
+    private void acaoCodigoLostFocus() {
+        jTextFieldID.addFocusListener(new FocusListener() {
+
+            @Override
+            public void focusGained(FocusEvent e) {
+            
+            }
+            
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (!jTextFieldID.getText().isEmpty()){
+                try{
+                    int id  = Integer.parseInt(jTextFieldID.getText());
+                    ClienteBean cliente = new  ClienteDAO()
+                            .obterClientePeloId(id);
+                    if(cliente == null){
+                        JOptionPane.showMessageDialog(null, 
+                                "Registro não encontrado");
+                        jTextFieldID.requestFocus();
+                    }else{
+                        jTextFieldNome.setText(cliente.getNome());
+                        jFormattedTextFieldCPF.setText(cliente.getCpf());
+                        jFormattedTextFieldData.setText(
+                                Utilitarios.obterPadraoBr(cliente.getData()));
+                        if(cliente.isAtivo()){
+                            jRadioButtonAtivo.setSelected(true);
+                        }else{
+                            
+                            jRadioButtonAtivo.setSelected(true);
+                        }
+                        buttonGroup.clearSelection();
+                }
+                }catch(NumberFormatException el){
+                     JOptionPane.showMessageDialog(null, 
+                             "Campo deve conter somente numeros");
+                }
+            }
+            }
+        });
     }
 
 }
